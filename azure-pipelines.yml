@@ -21,13 +21,13 @@ steps:
 
 - script: |
     python fetch_secrets.py
-    displayName: 'Run Python script to fetch secrets'
+  displayName: 'Run Python script to fetch secrets'
   # The Python script should output variables in a specific format (shown below)
 
 - script: |
     echo "Using secret in next step"
     echo "The secret value is: $(MY_SECRET)"
-    displayName: 'Use secret variable'
+  displayName: 'Use secret variable'
 - task: NuGetToolInstaller@1
 
 - task: NuGetCommand@2
