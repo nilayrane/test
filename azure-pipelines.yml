@@ -1,7 +1,5 @@
-# ASP.NET Core (.NET Framework)
-# Build and test ASP.NET Core projects targeting the full .NET Framework.
-# Add steps that publish symbols, save build artifacts, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
+# ASP.NET Core (.NET Framework) build pipeline
+# Includes Python secret retrieval
 
 trigger:
 - master
@@ -15,25 +13,32 @@ variables:
   buildConfiguration: 'Release'
 
 steps:
+- checkout: self
+
+# Step 1: Setup Python
 - task: UsePythonVersion@0
   inputs:
     versionSpec: '3.x'
 
+# Step 2: Run the Python script to fetch secrets
 - script: |
     python fetch_secrets.py
   displayName: 'Run Python script to fetch secrets'
-  # The Python script should output variables in a specific format (shown below)
 
+# Step 3: Use the secret variable
 - script: |
     echo "Using secret in next step"
     echo "The secret value is: $(MY_SECRET)"
   displayName: 'Use secret variable'
+
+# Step 4: Restore NuGet packages
 - task: NuGetToolInstaller@1
 
 - task: NuGetCommand@2
   inputs:
     restoreSolution: '$(solution)'
 
+# Step 5: Build solution
 - task: VSBuild@1
   inputs:
     solution: '$(solution)'
@@ -41,14 +46,16 @@ steps:
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
 
+# Step 6: Publish symbols
 - task: PublishSymbols@1
-  displayName: ' Publish Symbols Path: '
+  displayName: 'Publish Symbols Path:'
   inputs:
     SearchPattern: '**\bin\**\*.pdb'
   continueOnError: true
 
+# Step 7: Copy build output
 - task: CopyFiles@1
-  displayName: 'Copy files from : $(build.artifactstagingdirectory)'
+  displayName: 'Copy files to artifact staging directory'
   inputs:
     SourceFolder: '$(build.sourcesdirectory)'
     Contents: |
@@ -57,8 +64,9 @@ steps:
     TargetFolder: '$(build.artifactstagingdirectory)'
   condition: succeededOrFailed()
 
+# Step 8: Publish artifacts
 - task: PublishBuildArtifacts@1
-  displayName: 'Publish Artifact : Drop'
+  displayName: 'Publish Artifact: Drop'
   inputs:
     PathtoPublish: '$(build.artifactstagingdirectory)'
   condition: succeededOrFailed()
